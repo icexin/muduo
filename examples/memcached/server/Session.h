@@ -28,6 +28,7 @@ class Session : boost::noncopyable,
       noreply_(false),
       policy_(Item::kInvalid),
       bytesToDiscard_(0),
+      needle_(Item::makeItem(kLongestKey, 0, 0, 2, 0)),
       bytesRead_(0),
       requestsProcessed_(0)
   {
@@ -37,7 +38,9 @@ class Session : boost::noncopyable,
 
   ~Session()
   {
-    LOG_INFO << requestsProcessed_;
+    LOG_INFO << "requests processed: " << requestsProcessed_
+             << " input buffer size: " << conn_->inputBuffer()->internalCapacity()
+             << " output buffer size: " << conn_->outputBuffer()->internalCapacity();
   }
 
  private:
@@ -58,6 +61,7 @@ class Session : boost::noncopyable,
   void onMessage(const muduo::net::TcpConnectionPtr& conn,
                  muduo::net::Buffer* buf,
                  muduo::Timestamp);
+  void onWriteComplete(const muduo::net::TcpConnectionPtr& conn);
   void receiveValue(muduo::net::Buffer* buf);
   void discardValue(muduo::net::Buffer* buf);
   // TODO: highWaterMark
@@ -93,10 +97,14 @@ class Session : boost::noncopyable,
   Item::UpdatePolicy policy_;
   ItemPtr currItem_;
   size_t bytesToDiscard_;
+  // cached
+  ItemPtr needle_;
 
   // per session stats
   size_t bytesRead_;
   size_t requestsProcessed_;
+
+  static string kLongestKey;
 };
 
 typedef boost::shared_ptr<Session> SessionPtr;
