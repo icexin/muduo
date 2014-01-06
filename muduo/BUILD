@@ -93,6 +93,7 @@ cc_library(
 	':muduo_net',
 	':muduo_proto',
 	'//thirdparty/protobuf:protobuf',
+    '//toft/base:closure',
 	'#z'
 	]
 )

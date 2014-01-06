@@ -15,6 +15,8 @@
 
 #include <boost/bind.hpp>
 
+#include <toft/base/closure.h>
+
 using namespace muduo;
 using namespace muduo::net;
 
@@ -54,11 +56,13 @@ void RpcChannel::CallMethod(const ::google::protobuf::MethodDescriptor* method,
   message.set_service(method->service()->name());
   message.set_method(method->name());
   message.set_request(request->SerializeAsString()); // FIXME: error check
-  RpcCodec::send(conn_, message);
 
   OutstandingCall out = { response, done };
-  MutexLockGuard lock(mutex_);
-  outstandings_[id] = out;
+  {
+      MutexLockGuard lock(mutex_);
+      outstandings_[id] = out;
+  }
+  RpcCodec::send(conn_, message);
 }
 
 void RpcChannel::onMessage(const TcpConnectionPtr& conn,
@@ -98,7 +102,6 @@ void RpcChannel::onRpcMessage(const TcpConnectionPtr& conn,
       {
         out.done->Run();
       }
-      delete out.response;
     }
   }
   else if (message.type() == REQUEST)
@@ -121,8 +124,7 @@ void RpcChannel::onRpcMessage(const TcpConnectionPtr& conn,
           google::protobuf::Message* response = service->GetResponsePrototype(method).New();
           int64_t id = message.id();
           service->CallMethod(method, NULL, request, response,
-              NewCallback(this, &RpcChannel::doneCallback, response, id));
-          delete request;
+              toft::NewClosure(this, &RpcChannel::doneCallback, request, response, id));
         }
         else
         {
@@ -144,13 +146,14 @@ void RpcChannel::onRpcMessage(const TcpConnectionPtr& conn,
   }
 }
 
-void RpcChannel::doneCallback(::google::protobuf::Message* response, int64_t id)
+void RpcChannel::doneCallback(::google::protobuf::Message* request, ::google::protobuf::Message* response, int64_t id)
 {
   RpcMessage message;
   message.set_type(RESPONSE);
   message.set_id(id);
   message.set_response(response->SerializeAsString()); // FIXME: error check
   RpcCodec::send(conn_, message);
+  delete request;
   delete response;
 }
 

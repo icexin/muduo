@@ -129,7 +129,7 @@ class RpcChannel : public ::google::protobuf::RpcChannel
                     const RpcMessage& message,
                     Timestamp receiveTime);
 
-  void doneCallback(::google::protobuf::Message* response, int64_t id);
+  void doneCallback(::google::protobuf::Message* resquest, ::google::protobuf::Message* response, int64_t id);
 
   struct OutstandingCall
   {
