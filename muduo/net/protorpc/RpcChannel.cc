@@ -157,3 +157,12 @@ void RpcChannel::doneCallback(::google::protobuf::Message* request, ::google::pr
   delete response;
 }
 
+void RpcChannel::clearOutstandings()
+{
+    muduo::MutexLockGuard guard(mutex_);
+    std::map<int64_t, OutstandingCall>::iterator it;
+    for (it=outstandings_.begin(); it!=outstandings_.end(); it++) {
+        delete it->second.done;
+    }
+    outstandings_.clear();
+}

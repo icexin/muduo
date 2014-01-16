@@ -104,6 +104,8 @@ class RpcChannel : public ::google::protobuf::RpcChannel
     conn_ = conn;
   }
 
+  void clearOutstandings();
+
   void setServices(const std::map<std::string, ::google::protobuf::Service*>* services)
   {
     services_ = services;
